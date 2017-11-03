@@ -53,6 +53,12 @@ class SmfBridgeUserUpdate extends Command
 
         foreach ($seatUsers as $seatUser) 
 	{
+		$main_id = User::find($seatUser->id)->settings()->where('name', 'main_character_id')->get();
+		{
+			$main_char = $this->getCharacterSheet($main_id[0]->value);
+			$seatUser->name = $main_char->name;
+		}
+		
         	if ((($index = array_search($seatUser->name, array_column($users, 'name'))) == null) 
 			&& ($seatUser->name != "admin")) {
 			$this->SmfSyncUser($seatUser->id);
@@ -72,7 +78,13 @@ class SmfBridgeUserUpdate extends Command
 
 	foreach ($seatUsers as $user) 
 	{
-               array_push($users, ['id' => $user->id, 'name' => $user->name]);
+		$main_id = User::find($user->id)->settings()->where('name', 'main_character_id')->get();
+		if ((count($main_id) > 0) && ($user->name != 'admin')) 
+		{
+			$main_char = $this->getCharacterSheet($main_id[0]->value);
+			$user->name = $main_char->name;
+		}
+		array_push($users, ['id' => $user->id, 'name' => $user->name]);
         }
 
 	foreach ($smfUsers as $user)
@@ -81,8 +93,8 @@ class SmfBridgeUserUpdate extends Command
 			&& ($user->member_name != 'admin'))
 		{
 			$smfUsers = DB::connection('smf')->table('members')
-				->update(['is_activated' => 0])
-				->where('member_name', $user->member_name);
+				->where('member_name', $user->member_name)
+				->update(['is_activated' => 0]);
 		}
 	}
     }
@@ -91,7 +103,8 @@ class SmfBridgeUserUpdate extends Command
         {
                 $baseUser = $this->getFullUser($id);
                 $main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();
-                if (($main_id != null) && ($main_char->name != 'admin')) {
+                if ((count($main_id) > 0) && ($baseUser->name != 'admin')) {
+
                         $main_char = $this->getCharacterSheet($main_id[0]->value);
                         $smfUser = new SmfBridgeUser;
 
