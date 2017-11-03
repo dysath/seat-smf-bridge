@@ -182,6 +182,7 @@ class SmfBridgeController extends Controller {
 
 		$baseUser = $this->getFullUser($id);
                 $main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();
+
                 $main_char = $this->getCharacterSheet($main_id[0]->value);
 
                 if (($main_id != null) && ($main_char->name != 'admin')) {
