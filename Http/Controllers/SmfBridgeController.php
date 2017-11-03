@@ -180,32 +180,30 @@ class SmfBridgeController extends Controller {
 	
 	public function SmfAuthenticate($id = 0) {
 
-		if ($id == 0) {
-			echo "No id passed.";
-			exit;
-		}
 		$baseUser = $this->getFullUser($id);
-
                 $main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();
-                if ((count($main_id) > 0) && ($baseUser->name != 'admin')) {
+                $main_char = $this->getCharacterSheet($main_id[0]->value);
 
-			$main_char = $this->getCharacterSheet($main_id[0]->value);
+                if (($main_id != null) && ($main_char->name != 'admin')) {
+
+			$login = $main_char->name;
 			$passwd = sha1($baseUser->password);
-       		        $salt = $this->SmfGenerateSalt();
-       	         	$passwd_salted = sha1($passwd . $salt);
+                	$salt = $this->SmfGenerateSalt();
+	                $passwd_salted = sha1($passwd . $salt);
 	
 			if ($baseUser->name != 'admin') {
 				DB::connection('smf')->table('members')
-						->where('member_name', $main_char->name)
-     		         	                ->update(['passwd' => $passwd,
-              		         	                  'password_salt' => $salt]);
+						->where('member_name', $login)
+                		                ->update(['passwd' => $passwd,
+                        	                  'password_salt' => $salt]);
 	
 				$smfUserId = DB::connection('smf')->table('members')
-        		                        ->where('member_name', $main_char->name)
+        		                        ->where('member_name', $login)
                 		                ->select('id_member')->get();
 			}
-			$this->SmfSetLoginCookie($smfUserId[0]->id_member, $passwd_salted);
 		}
+		$this->SmfSetLoginCookie($smfUserId[0]->id_member, $passwd_salted);
+		
         }
 
 	public function SmfLogin() {
