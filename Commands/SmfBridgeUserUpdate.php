@@ -84,7 +84,6 @@ class SmfBridgeUserUpdate extends Command
 			$main_char = $this->getCharacterSheet($main_id[0]->value);
 			$user->name = $main_char->name;
 		}
-echo "Adding ".$user->name." to array..\n";
 		array_push($users, ['id' => $user->id, 'name' => $user->name]);
         }
 
