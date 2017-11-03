@@ -35,32 +35,63 @@ class SmfBridgeUserUpdate extends Command
 
     public function handle()
     {
-         $smfUsers = DB::connection('smf')->table('members')
-         	->select(['id_member','member_name'])
+        $smfUsers = DB::connection('smf')->table('members')
+        	->select(['id_member','member_name'])
+		->get();
+
+        $seatUsers = DB::connection()->table('users')
+               ->select(['id','name'])
+               ->get();
+
+        $users = array();
+
+         //  Sync Users in SeAT to SMF
+        foreach ($smfUsers as $user) 
+	{
+               array_push($users, ['id' => $user->id_member, 'name' => $user->member_name]);
+        }
+
+        foreach ($seatUsers as $seatUser) 
+	{
+        	if ((($index = array_search($seatUser->name, array_column($users, 'name'))) == null) 
+			&& ($seatUser->name != "admin")) {
+			$this->SmfSyncUser($seatUser->id);
+               }
+        }
+
+	// Disable any users NOT in Seat outside of 'admin'
+        $smfUsers = DB::connection('smf')->table('members')
+                ->select(['id_member','member_name'])
                 ->get();
 
-         $seatUsers = DB::connection()->table('users')
+        $seatUsers = DB::connection()->table('users')
                 ->select(['id','name'])
                 ->get();
 
-         $users = array();
-         foreach ($smfUsers as $user) {
-                array_push($users, ['id' => $user->id_member, 'name' => $user->member_name]);
-         }
+	$users = array();
 
-         foreach ($seatUsers as $seatUser) {
-                if ((($index = array_search($seatUser->name, array_column($users, 'name'))) == null) 
-			&& ($seatUser->name != "admin")) {
-                       $this->SmfSyncUser($seatUser->id);
-                }
-         }
+	foreach ($seatUsers as $user) 
+	{
+               array_push($users, ['id' => $user->id, 'name' => $user->name]);
+        }
+
+	foreach ($smfUsers as $user)
+	{
+		if ((array_search($user->member_name, array_column($users, 'name')) == null)
+			&& ($user->member_name != 'admin'))
+		{
+			$smfUsers = DB::connection('smf')->table('members')
+				->update(['is_activated' => 0])
+				->where('member_name', $user->member_name);
+		}
+	}
     }
 
     public function SmfSyncUser($id = '')
         {
                 $baseUser = $this->getFullUser($id);
                 $main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();
-                if ($main_id != null) {
+                if (($main_id != null) && ($main_char->name != 'admin')) {
                         $main_char = $this->getCharacterSheet($main_id[0]->value);
                         $smfUser = new SmfBridgeUser;
 

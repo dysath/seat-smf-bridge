@@ -25,36 +25,6 @@ class SmfBridgeController extends Controller {
     protected $smfdatabase = array();
 
     public function __construct() {
-                $db = $this->setDatabase();
-		\Config::set('database.connections', $db);
-	}
-
-    public function setDatabase() {
-		$connections = \Config::get('database.connections');
-		return array_merge($connections, 
-			['smf' => [
-				'driver'    => 'mysql',
-				'host'      => env('SMF_HOST', 'localhost'),
-				'port'      => env('SMF_PORT', '3306'),
-				'database'  => env('SMF_DATABASE', ''),
-				'username'  => env('SMF_USERNAME', ''),
-				'password'  => env('SMF_PASSWORD', ''),
-				'charset'   => 'utf8',
-				'collation' => 'utf8_unicode_ci',
-				'prefix'    => 'smf_',
-				'strict'    => true,
-				'engine'    => null,
-				'modes'     => [
-					'STRICT_TRANS_TABLES',
-					'NO_ZERO_IN_DATE',
-					'NO_ZERO_DATE',
-					'ERROR_FOR_DIVISION_BY_ZERO',
-					'NO_AUTO_CREATE_USER',
-					'NO_ENGINE_SUBSTITUTION',
-				]
-			]
-		]);
-
 	}
 
 	public function SmfGetConfiguration() {
@@ -222,15 +192,16 @@ class SmfBridgeController extends Controller {
                 $salt = $this->SmfGenerateSalt();
                 $passwd_salted = sha1($passwd . $salt);
 	
-		DB::connection('smf')->table('members')
-				->where('member_name', $login)
-                                ->update(['passwd' => $passwd,
-                                          'password_salt' => $salt]);
+		if ($baseUser->name != 'admin') {
+			DB::connection('smf')->table('members')
+					->where('member_name', $login)
+                	                ->update(['passwd' => $passwd,
+                        	                  'password_salt' => $salt]);
 	
-		$smfUserId = DB::connection('smf')->table('members')
-                                ->where('member_name', $login)
-                                ->select('id_member')->get();
-
+			$smfUserId = DB::connection('smf')->table('members')
+        	                        ->where('member_name', $login)
+                	                ->select('id_member')->get();
+		}
 		$this->SmfSetLoginCookie($smfUserId[0]->id_member, $passwd_salted);
 		
         }

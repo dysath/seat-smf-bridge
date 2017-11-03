@@ -15,13 +15,9 @@ class SmfBridgeServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-
         $this->addCommands();
         $this->addRoutes();
         $this->addViews();
-//        $this->addPublications();
-//        $this->addTranslations();
-//        $this->registerServices();
     }
 
     /**

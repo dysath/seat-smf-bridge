@@ -9,21 +9,9 @@ Route::group([
         'middleware' => 'web'
     ], function () {
 
-        Route::get('/configuration', [
-            'as'   => 'smfbridge.configuration',
-            'uses' => 'SmfBridgeAdminController@SmfGetConfiguration', 
-        ]);
-        Route::get('/syncuser', [
-            'as'   => 'smfbridge.syncusers',
-            'uses' => 'SmfBridgeController@SmfSyncUsers', 
-        ]);
-	Route::get('/auth/login', [
+	Route::get('/login', [
 		'as'   => 'smfbridge.login',
 		'uses' => 'SmfBridgeController@SmfLogin',
-	]);
-	Route::get('/test', [
-		'as'   => 'smfbridge.test',
-		'uses' => 'SmfBridgeController@SmfTest',
 	]);
     });
 });

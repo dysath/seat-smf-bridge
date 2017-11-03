@@ -11,7 +11,7 @@ return [
             'password'  => env('SMF_PASSWORD', ''),
             'charset'   => 'utf8',
             'collation' => 'utf8_unicode_ci',
-            'prefix'    => 'smf_',
+            'prefix'    => env('SMF_PREFIX', 'smf_'),
             'strict'    => true,
             'engine'    => null,
             'modes'     => [
