@@ -28,14 +28,14 @@ class SmfBridgeServiceProvider extends ServiceProvider
     public function register()
     {
         //
+        $this->mergeConfigFrom(
+            __DIR__ . '/Config/smfbridge.config.php', 'smfbridge.config');
+
 	$this->mergeConfigFrom(
             __DIR__ . '/Config/smfbridge.database.php', 'database.connections');
 
 	$this->mergeConfigFrom(
             __DIR__ . '/Config/smfbridge.permissions.php', 'web.permissions');
-
-        $this->mergeConfigFrom(
-            __DIR__ . '/Config/smfbridge.sidebar.php', 'package.sidebar');
     }
 
     private function addRoutes()
