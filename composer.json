@@ -1,0 +1,24 @@
+{
+    "name": "denngarr/smf-bridge",
+    "description": "This plugin uses the SeAT users with APIs to create SMF users and auto-login to the forums.",
+    "type": "seat-plugin",
+    "autoload": {
+        "psr-4": {
+            "Denngarr\\Seat\\SmfBridge\\": "src/"
+        }
+    },
+    "require": {
+        "eveseat/services": "^2.0",
+        "eveseat/eveapi": "^2.0",
+        "eveseat/web": "^2.0"
+    },
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Denngarr B'tarn",
+            "email": "denngarr@cripplecreekcorp.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
+
