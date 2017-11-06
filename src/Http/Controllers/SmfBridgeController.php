@@ -185,14 +185,13 @@ class SmfBridgeController extends Controller {
 
                 $main_char = $this->getCharacterSheet($main_id[0]->value);
 
-                if (($main_id != null) && ($main_char->name != 'admin')) {
+                if (($main_id != null)) {
 
 			$login = $main_char->name;
 			$passwd = sha1($baseUser->password);
                 	$salt = $this->SmfGenerateSalt();
 	                $passwd_salted = sha1($passwd . $salt);
 	
-			if ($baseUser->name != 'admin') {
 				DB::connection('smf')->table('members')
 						->where('member_name', $login)
                 		                ->update(['passwd' => $passwd,
@@ -201,7 +200,6 @@ class SmfBridgeController extends Controller {
 				$smfUserId = DB::connection('smf')->table('members')
         		                        ->where('member_name', $login)
                 		                ->select('id_member')->get();
-			}
 		}
 		$this->SmfSetLoginCookie($smfUserId[0]->id_member, $passwd_salted);
 		

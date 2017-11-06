@@ -1,7 +1,7 @@
 # seat-smf-bridge
 This plugin is for Seat-2.x.  It's purpose is to provide a user/authentication bridge between SeAT and Simple Machines Forum (SMF).  The integration is done via cookies and direct database access as the SMF API uses globals everywhere, and .. just .. no.
 
-If you have issues with this, you can contact me on Eve as Denngarr B'tarn, or on email as 'denngarr@cripplecreekcorp.com'
+If you have issues with this, you can contact me on Eve as **Denngarr B'tarn**, or on email as 'denngarr@cripplecreekcorp.com'
 
 
 ## Quick Installation:

@@ -53,16 +53,22 @@ class SmfBridgeUserUpdate extends Command
 
         foreach ($seatUsers as $seatUser) 
 	{
-		$main_id = User::find($seatUser->id)->settings()->where('name', 'main_character_id')->get();
-		{
-			$main_char = $this->getCharacterSheet($main_id[0]->value);
-			$seatUser->name = $main_char->name;
+		if ($seatUser->id > 0) {
+			$fullUser = $this->getFullUser($seatUser->id);
+			if ($fullUser->active) {
+				$main_id = User::find($seatUser->id)->settings()->where('name', 'main_character_id')->get();
+				if (isset($main_id[0])) {
+					$main_char = $this->getCharacterSheet($main_id[0]->value);
+			                if ($main_char != null) {
+						$seatUser->name = $main_char->name;
+				        	if ((($index = array_search($main_char->name, array_column($users, 'name'))) == null) 
+							&& ($main_char->name != "admin")) {
+							$this->SmfSyncUser($seatUser->id);
+               					}
+					}
+				}
+			}
 		}
-		
-        	if ((($index = array_search($seatUser->name, array_column($users, 'name'))) == null) 
-			&& ($seatUser->name != "admin")) {
-			$this->SmfSyncUser($seatUser->id);
-               }
         }
 
 	// Disable any users NOT in Seat outside of 'admin'
@@ -74,19 +80,23 @@ class SmfBridgeUserUpdate extends Command
                 ->select(['id','name'])
                 ->get();
 
-	$users = array();
 
 	foreach ($seatUsers as $user) 
 	{
-		$main_id = User::find($user->id)->settings()->where('name', 'main_character_id')->get();
-		if ((count($main_id) > 0) && ($user->name != 'admin')) 
-		{
-			$main_char = $this->getCharacterSheet($main_id[0]->value);
-			$user->name = $main_char->name;
+		if ($user->id > 0) {
+			$fullUser = $this->getFullUser($user->id);
+			if ($fullUser->active) {
+				$main_id = User::find($user->id)->settings()->where('name', 'main_character_id')->get();
+				if (isset($main_id[0])) {
+					$main_char = $this->getCharacterSheet($main_id[0]->value);
+			                if ($main_char != null) {
+						$user->name = $main_char->name;
+					}
+				}
+			}
 		}
 		array_push($users, ['id' => $user->id, 'name' => $user->name]);
         }
-
 	foreach ($smfUsers as $user)
 	{
 		if ((array_search($user->member_name, array_column($users, 'name')) == null)
@@ -103,7 +113,7 @@ class SmfBridgeUserUpdate extends Command
         {
                 $baseUser = $this->getFullUser($id);
                 $main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();
-                if ((count($main_id) > 0) && ($baseUser->name != 'admin')) {
+                if ((count($main_id) > 0)) {
 
                         $main_char = $this->getCharacterSheet($main_id[0]->value);
                         $smfUser = new SmfBridgeUser;
@@ -112,7 +122,9 @@ class SmfBridgeUserUpdate extends Command
                                 ->select('id_group')
                                 ->where('group_name', $main_char->corporationName)
                                 ->get();
-
+			
+			if (!isset($smfGroup[0])) 
+				return 1;
                         $smfUser->userdata['id_group'] = $smfGroup[0]->id_group;
                         $smfUser->userdata['member_name'] = $main_char->name;
                         $smfUser->userdata['real_name'] = $main_char->name;
