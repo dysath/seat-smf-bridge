@@ -12,6 +12,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redis;
 use Seat\Services\Repositories\Configuration\UserRespository;
 use Seat\Web\Models\User;
+use Seat\Web\Models\Acl\Role;
 use Seat\Services\Models\UserSetting;
 use Seat\Services\Settings\Profile;
 use Seat\Web\Http\Validation\ProfileSettings;
@@ -32,6 +33,87 @@ class SmfBridgeUserUpdate extends Command
     {
         parent::__construct();
     }
+
+    public function getUserCorporations($id = 0) 
+    {
+        if ($id > 0) {
+
+         return DB::connection()->table('users')
+                ->join('eve_api_keys', 'eve_api_keys.user_id', '=', 'users.id')
+                ->join('account_api_key_info_characters', 'account_api_key_info_characters.keyID', '=', 'eve_api_keys.key_id')
+                ->select('account_api_key_info_characters.corporationName')
+                ->where('users.id', '=', $id)
+                ->get();
+        }
+	return false;
+    }
+
+    public function smfGetMemberAdditionalGroups($id_member = 0)
+    {
+        $allgroups = [];
+
+	$groups = DB::connection('smf')->table('members')
+            ->select('additional_groups')
+            ->where('icq', '=', $id_member)
+            ->get();
+
+	if (($groups != false) && (count($groups) > 0))
+        {
+             $mygroup = explode(',', $groups[0]->additional_groups);
+             foreach($mygroup as $gid)
+             {
+                 $group_name = DB::connection('smf')->table('membergroups')
+                     ->select('group_name')
+                     ->where('id_group', '=', $gid)
+                     ->get();
+                 array_push($allgroups, $group_name);
+             }
+             $primary_group = DB::connection('smf')->table('members')
+                 ->select('id_group')
+                 ->where('icq', '=', $id_member)
+                 ->get();
+             array_push($mygroup, $primary_group[0]->id_group);
+
+             return $mygroup;
+        }
+        return [];
+    }
+
+    public function smfGetAllGroups()
+    {
+        return DB::connection('smf')->table('membergroups')
+            ->select(['id_group', 'group_name'])
+            ->get();
+    }
+
+    private function smfSyncGroups($seatUserId = 0, $characterId = 0)
+    {
+        $ugroups = [];
+        $user = User::find($seatUserId);
+        $roles = $user->roles;
+        $mgroups = $this->smfGetAllGroups();
+
+        /* Get list of matching Roles to Membergroups */
+        foreach ($roles as $role) {
+            foreach ($mgroups as $mgroup) {
+                if ($role->title == $mgroup->group_name)
+                     array_push($ugroups, $mgroup->id_group);
+            }
+        }
+
+        $mgroups = $this->smfGetMemberAdditionalGroups($characterId);
+        $dgroups = array_diff($mgroups, $ugroups);
+
+        if (count($dgroups) > 0) {
+            $agroups = array_intersect($mgroups, $ugroups);
+            $corrected_list = implode(',', $agroups);
+
+            DB::connection('smf')->table('members')
+                ->where('icq', '=', $characterId)
+                ->update(['additional_groups' => $corrected_list]);
+        }
+    }
+
 
     public function handle()
     {
@@ -59,19 +141,26 @@ class SmfBridgeUserUpdate extends Command
 				$main_id = User::find($seatUser->id)->settings()->where('name', 'main_character_id')->get();
 				if (isset($main_id[0])) {
 					$main_char = $this->getCharacterSheet($main_id[0]->value);
+					$this->smfSyncGroups($seatUser->id, $main_id[0]->value);
 			                if ($main_char != null) {
 						$seatUser->name = $main_char->name;
 				        	if ((($index = array_search($main_char->name, array_column($users, 'name'))) == null) 
 							&& ($main_char->name != "admin")) {
-							$this->SmfSyncUser($seatUser->id);
+							$this->smfSyncUser($seatUser->id);
                					}
 					}
 				}
 			}
 		}
         }
+	$this->smfDisableUsers();
+    }
 
-	// Disable any users NOT in Seat outside of 'admin'
+    private function smfDisableUsers() {
+
+        // Disable any users NOT in Seat outside of 'admin'
+
+        $users = array();
         $smfUsers = DB::connection('smf')->table('members')
                 ->select(['id_member','member_name'])
                 ->get();
@@ -81,35 +170,35 @@ class SmfBridgeUserUpdate extends Command
                 ->get();
 
 
-	foreach ($seatUsers as $user) 
-	{
-		if ($user->id > 0) {
-			$fullUser = $this->getFullUser($user->id);
-			if ($fullUser->active) {
-				$main_id = User::find($user->id)->settings()->where('name', 'main_character_id')->get();
-				if (isset($main_id[0])) {
-					$main_char = $this->getCharacterSheet($main_id[0]->value);
-			                if ($main_char != null) {
-						$user->name = $main_char->name;
-					}
-				}
-			}
-		}
-		array_push($users, ['id' => $user->id, 'name' => $user->name]);
+        foreach ($seatUsers as $user)
+        {
+            if ($user->id > 0) {
+                $fullUser = $this->getFullUser($user->id);
+                if ($fullUser->active) {
+                    $main_id = User::find($user->id)->settings()->where('name', 'main_character_id')->get();
+                    if (isset($main_id[0])) {
+                        $main_char = $this->getCharacterSheet($main_id[0]->value);
+                        if ($main_char != null) {
+                            $user->name = $main_char->name;
+                        }
+                    }
+                }
+            }
+            array_push($users, ['id' => $user->id, 'name' => $user->name]);
         }
-	foreach ($smfUsers as $user)
-	{
-		if ((array_search($user->member_name, array_column($users, 'name')) == null)
-			&& ($user->member_name != 'admin'))
-		{
-			$smfUsers = DB::connection('smf')->table('members')
-				->where('member_name', $user->member_name)
-				->update(['is_activated' => 0]);
-		}
-	}
+        foreach ($smfUsers as $user)
+        {
+            if ((array_search($user->member_name, array_column($users, 'name')) == null)
+                   && ($user->member_name != 'admin'))
+            {
+                   $smfUsers = DB::connection('smf')->table('members')
+                            ->where('member_name', $user->member_name)
+                            ->update(['is_activated' => 0]);
+            }
+        }
     }
 
-    public function SmfSyncUser($id = '')
+    private function smfSyncUser($id = '')
         {
                 $baseUser = $this->getFullUser($id);
                 $main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();

@@ -68,37 +68,9 @@ class SmfBridgeController extends Controller {
 		return $salt;
 	}
 
-	public function SmfSyncUser($id = '')
-	{
-		$baseUser = $this->getFullUser($id);
-		$main_id = User::find($id)->settings()->where('name', 'main_character_id')->get();
-		if ($main_id != null) {
-			$main_char = $this->getCharacterSheet($main_id[0]->value);
-			$smfUser = new SmfBridgeUser;		
-
-			$smfGroup = DB::connection('smf')->table('membergroups')
-				->select('id_group')
-				->where('group_name', $main_char->corporationName)
-				->get();
-
-			$smfUser->userdata['id_group'] = $smfGroup[0]->id_group;
-	                $smfUser->userdata['member_name'] = $main_char->name;
-	       	        $smfUser->userdata['real_name'] = $main_char->name;
-	       	        $smfUser->userdata['icq'] = $main_char->characterID;
-	       	        $smfUser->userdata['email_address'] = $baseUser->email;
-	       	        $smfUser->userdata['birthdate'] = $main_char->DoB;
-	       	        $smfUser->userdata['personal_text'] = $main_char->corporationName;
-	                $smfUser->userdata['avatar'] = 'https://image.eveonline.com/Character/'.$main_char->characterID.'_128.jpg';
-	                $smfUser->userdata['is_activated'] = $baseUser->active;
-	                $smfUser->userdata['date_registered'] = time();
-			$smfUser->userdata['password_salt'] = $this->SmfGenerateSalt();
-			$smfUser->userdata['passwd'] = sha1($baseUser->password . $smfUser->userdata['password_salt']);
-
-			DB::connection('smf')->table('members')
-				->insert($smfUser->userdata);		
-			return 0;
-		}
-		return 1;
+	public function SmfWarning($warnings = '') {
+		return view('smfbridge::warning',
+			compact('warnings'));
 	}
 
         // Author: Jonathan Sampson
@@ -201,6 +173,9 @@ class SmfBridgeController extends Controller {
         		                        ->where('member_name', $login)
                 		                ->select('id_member')->get();
 		}
+		else {
+			$this->SmfWarning("Please associate an API with your account and edit your Profile to choose your main.");
+		}
 		$this->SmfSetLoginCookie($smfUserId[0]->id_member, $passwd_salted);
 		
         }
@@ -221,6 +196,5 @@ class SmfBridgeController extends Controller {
 				'url' => 'a:1:{s:10:"USER_AGENT";s:114:"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36";}']);
 		return view('smfbridge::forum');
 	}
-
 };
 
