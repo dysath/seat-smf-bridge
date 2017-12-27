@@ -47,7 +47,23 @@ and save the file.  Now you're ready to tell SeAT how to use the plugin:
 php artisan vendor:publish --force
 ```
 
-And now, when you log into 'Seat', you should see a 'Forum' link on the left.  Do not use this as the 'admin' user.  Use an actual Eve user via SSO is best.
+And now, when you log into 'Seat', you should see a 'Forum' link on the left.
+
+## Caveats:
+
+* Do not use this as the 'admin' user.  Use an actual Eve user via SSO is best.
+* If you use the 'admin' user, change the username to your username
+* There is an extra command called 'seat-ext:update:users'.  This will create roles for each corp and join each user to their respective roles based on APIs
+
+## Remove reauthentication for Admin control (auth is all handled by SeAT now)
+Log directly into SMF as 'admin' and go to: 
+Admin->Configuration->Security and Moderation->General
+Check 'Disable adminstration security'
+Click 'Save'
+
+Now, go into Members->Membergroups:
+Click on 'Administrator'
+Add your additional users that will act as Admins on the Forum.  It may only be yourself.
 
 Good luck, and Happy Hunting!!  o7
 
