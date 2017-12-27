@@ -13,5 +13,9 @@ Route::group([
 		'as'   => 'smfbridge.login',
 		'uses' => 'SmfBridgeController@SmfLogin',
 	]);
+	Route::get('/warning', [
+		'as'	=>	'smfbridge.warning',
+		'uses'	=>	'SmfBridgeController@SmfWarning',
+	]);
     });
 });
