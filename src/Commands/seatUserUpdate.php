@@ -20,7 +20,7 @@ class seatUserUpdate extends Command
 {
     use AccessManager;
 
-    protected $signature = 'seat-ext:users:update';
+    protected $signature = 'seat:users:update';
 
     protected $description = 'Sync users with Seat Roles';
 

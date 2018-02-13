@@ -4,7 +4,8 @@ namespace Denngarr\Seat\SmfBridge;
 
 use Illuminate\Support\ServiceProvider;
 use Laravel\Lumen\Application;
-use Denngarr\Seat\SmfBridge\Commands\SmfBridgeUserUpdate;
+use Denngarr\Seat\SmfBridge\Commands\seatUserUpdate;
+use Denngarr\Seat\SmfBridge\Commands\UserUpdate;
 
 class SmfBridgeServiceProvider extends ServiceProvider
 {
@@ -56,7 +57,8 @@ class SmfBridgeServiceProvider extends ServiceProvider
     private function addCommands()
     {
         $this->commands([
-            SmfBridgeUserUpdate::class
+            seatUserUpdate::class,
+            UserUpdate::class
         ]);
     }
 
