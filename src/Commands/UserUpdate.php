@@ -1,9 +1,4 @@
 <?php
-/**
- * User: Warlof Tutsimo <loic.leuilliot@gmail.com>
- * Date: 17/06/2016
- * Time: 18:51
- */
 
 namespace Denngarr\Seat\SmfBridge\Commands;
 
@@ -45,30 +40,36 @@ class UserUpdate extends Command
         foreach ($seatUsers as $seatUser)
         {
             if ($seatUser->name != "admin") {
+echo "Working on " . $seatUser->name . "... \n";
 
                 $user_settings = User::find($seatUser->id)->settings()->get();
-                $main_character_id = $user_settings->where('name', 'main_character_id')->first()->value;
-                $main_character_name = $user_settings->where('name', 'main_character_name')->first()->value;
 
-                $smf_member = Members::where('member_name', $main_character_name)->first();
-                if (empty($smf_member)) {
-                    if ($seatUser->active === 1) {
-                        echo "Creating user: $main_character_name\n";
-                        $smf_new_member = $this->createMember($seatUser, $main_character_id, $main_character_name);
-                        $smf_new_member->additional_groups = $this->getGroups($smf_new_member, $seatUser);
-                        $smf_new_member->save();
-                        
-                    }
-                }
-                else {
-                    if ($seatUser->account_status === 1) {
-                            $smf_member->is_activated = '1';
-                            $smf_member->additional_groups = $this->getGroups($smf_member, $seatUser);
-                            $smf_member->save();
+                if (!empty($user_settings->where('name', 'main_character_id')->first())) {
+
+                    $main_character_id = $user_settings->where('name', 'main_character_id')->first()->value;
+                    $main_character_name = $user_settings->where('name', 'main_character_name')->first()->value;
+
+                    $smf_member = Members::where('member_name', $main_character_name)->first();
+                    if (empty($smf_member)) {
+                        if ($seatUser->active === 1) {
+                            echo "Creating user: $main_character_name\n";
+                            $smf_new_member = $this->createMember($seatUser, $main_character_id, $main_character_name);
+                            if (is_object($smf_new_member)) {
+                                $smf_new_member->additional_groups = $this->getGroups($smf_new_member, $seatUser);
+                                $smf_new_member->save();
+                            }
+                        }
                     }
                     else {
-                            $smf_member->is_activated = '0';
-                            $smf_member->save();
+                        if ($seatUser->account_status === 1) {
+                                $smf_member->is_activated = '1';
+                                $smf_member->additional_groups = $this->getGroups($smf_member, $seatUser);
+                                $smf_member->save();
+                        }
+                        else {
+                                $smf_member->is_activated = '0';
+                                $smf_member->save();
+                        }
                     }
                 }
             }
@@ -84,10 +85,16 @@ class UserUpdate extends Command
         }
 
         $main_char = $this->getCharacterSheet($main_character_id);
-
+        if (empty($main_char)) {
+          echo "Ignoring " . $user->name . ": No Main Character selected or APIs installed.\n";
+          return;
+        }
         $smfUser = new Members;
         $smfGroup = MemberGroups::where('group_name', $main_char->corporationName)->first();
 
+        if (empty($smfGroup)) {
+           return '';
+        }
         $smfUser->id_group = $smfGroup->id_group;
         $smfUser->member_name = $main_char->name;
         $smfUser->real_name = $main_char->name;
@@ -105,7 +112,10 @@ class UserUpdate extends Command
 
     private function getGroups($smf_member, $seatUser)
     {
-        
+
+        $seatRoles = [];
+        $smfRoles = [];
+
         //
         // $smfRoles equals All Assigned SMF MemberGroups
         // $primary_group equals The Main_Character_ID's role(corp_id)
@@ -121,7 +131,9 @@ class UserUpdate extends Command
         array_push($smfGroups, $primary_group);
         foreach ($smfGroups as $group) {
             $membergroup = MemberGroups::find($group);
-            $smfRoles[$membergroup->group_name] = $membergroup->id_group;
+            if (!empty($membergroup)) {
+                $smfRoles[$membergroup->group_name] = $membergroup->id_group;
+            }
         }
         $user_roles = User::find($seatUser->id)->roles()->get();
         foreach($user_roles as $role) {
